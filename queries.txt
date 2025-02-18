@@ -1,0 +1,101 @@
+
+
+--------------------------------------------------------------------------------------------
+view to get order data with the price amout : order_amount
+SELECT 
+    Orders.Date, 
+    SUM(Product.Price*Order_Product.quantity) AS amount
+FROM Orders
+JOIN Order_Product ON Order_Product.Order_ID = Orders.ID
+JOIN Product ON Order_Product.Product_ID = Product.ID
+GROUP BY Orders.Date ;
+
+--------------------------------------------------------------------------------------------
+
+view to get total order amounts for each user : user_total_amount
+    SELECT 
+        SUM(Product.Price*Order_Product.quantity) AS total_amount,
+        User.Name
+    FROM Orders
+    JOIN User ON Orders.Customer_ID = User.ID
+    JOIN Order_Product ON Order_Product.Order_ID = Orders.ID
+    JOIN Product ON Order_Product.Product_ID = Product.ID
+    GROUP BY User.Name;
+  
+--------------------------------------------------------------------------------------------
+Stored Procedure to get order prodcuts prices,quantity and name
+
+CREATE PROCEDURE GetOrderDetails(IN order_id INT)
+BEGIN
+    SELECT 
+        Product.Name AS ProductName, 
+        Product.Price AS ProductPrice, 
+        Order_Product.Quantity AS Quantity
+    FROM Orders
+    JOIN Order_Product ON Order_Product.Order_ID = Orders.ID
+    JOIN Product ON Order_Product.Product_ID = Product.ID
+    WHERE Orders.ID = order_id;
+END $$
+
+DELIMITER ;
+
+--------------------------------------------------------------------------------------------
+function to get the room number 
+DELIMITER $
+create function get_room(order_id int) returns varchar(4) DETERMINISTIC
+begin
+    DECLARE room VARCHAR(4);
+	Select Room.Name into room From Room join Orders on Orders.Room_ID=Room.ID where Orders.ID=order_id;
+	return room;
+	end $
+DELIMITER ;
+--------------------------------------------------------------------------------------------
+view to show all orders whos state is proccssing along with the user data :
+create view order_proccssings as
+select 
+	Orders.Date,
+	User.name,
+	User.Ext_no,
+	Orders.ID,
+	(select get_room(Orders.Room_ID)) as room
+from User join Orders on User.ID=Orders.Customer_ID where Orders.Status='Prossing';
+--------------------------------------------------------------------------------------------
+Stored Procedure to update order status to out for delivery 
+DELIMITER $
+CREATE PROCEDURE delivery(IN order_id INT)
+BEGIN
+    update 
+ 	Orders
+ 	     set  Orders.Status='Delivering'
+ 	 where Orders.ID=order_id;    
+
+END $
+
+DELIMITER ;
+--------------------------------------------------------------------------------------------
+Stored Procedure to update product status to not-avialbale:
+DELIMITER $
+CREATE PROCEDURE Prodcut_Status(IN Pro_ID INT)
+BEGIN
+    update 
+ 	Product
+ 	     set  Product.Status='Not_available'
+ 	 where Product.ID=Pro_ID;    
+
+END $
+
+DELIMITER ;
+----------------------------------------------------------------------------------------------------
+Stored Procedure to update product status to avialbale:
+DELIMITER $
+CREATE PROCEDURE Prodcut_Status_A(IN Pro_ID INT)
+BEGIN
+    update 
+ 	Product
+ 	     set  Product.Status='Available'
+ 	 where Product.ID=Pro_ID;    
+
+END $
+
+DELIMITER ;
+
